@@ -1,595 +1,248 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>客戶名單認領系統</title>
+    <title>客戶認領分配表</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Microsoft JhengHei', Arial, sans-serif;
-        }
-        
         body {
-            background-color: #f5f7fa;
-            color: #333;
-            line-height: 1.6;
+            font-family: "Microsoft JhengHei", sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
             padding: 20px;
+            background-color: #f5f5f5;
         }
-        
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-        }
-        
-        header {
-            background-color: #2c3e50;
-            color: white;
-            padding: 25px 30px;
+
+        h2 {
             text-align: center;
+            color: #333;
         }
-        
-        h1 {
-            font-size: 28px;
-            margin-bottom: 8px;
+
+        /* 控制面板區域 */
+        .control-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-        
-        .subtitle {
-            font-size: 16px;
-            opacity: 0.8;
-            margin-bottom: 5px;
-        }
-        
-        .stats {
-            background-color: #ecf0f1;
-            padding: 15px 30px;
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid #ddd;
-            font-size: 16px;
+
+        .step-label {
             font-weight: bold;
-        }
-        
-        .instructions {
-            background-color: #f9f9f9;
-            padding: 20px 30px;
-            border-bottom: 1px solid #eee;
-            font-size: 15px;
-        }
-        
-        .instructions p {
             margin-bottom: 10px;
+            display: block;
+            color: #555;
         }
-        
-        .instructions ul {
-            padding-left: 20px;
-            margin-bottom: 10px;
-        }
-        
-        .client-list {
-            padding: 0 30px 30px;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+
+        /* 銷售選擇按鈕 */
+        .role-selector {
+            display: flex;
+            justify-content: center;
             gap: 15px;
+            margin-bottom: 20px;
         }
-        
-        .client-item {
+
+        .role-btn {
+            padding: 10px 20px;
+            border: 3px solid transparent;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.2s;
+            opacity: 0.6;
+        }
+
+        .role-btn.active {
+            opacity: 1;
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            border-color: #333; /* 選中時加黑邊框 */
+        }
+
+        /* 定義顏色變量 */
+        .btn-02 { background-color: #FFD700; color: #000; } /* 黃色 (金色以便閱讀) */
+        .btn-08 { background-color: #FF4D4D; color: #fff; } /* 紅色 */
+        .btn-05 { background-color: #2ECC71; color: #fff; } /* 綠色 */
+
+        /* 客戶列表網格 */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .customer-item {
+            background: white;
             padding: 15px;
-            background-color: #f8f9fa;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #ddd;
             border-radius: 8px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            user-select: none;
+            text-align: center;
+            transition: all 0.2s;
+            font-size: 15px;
         }
-        
-        .client-item:hover {
-            background-color: #e8f4fc;
-            border-color: #b3d9ff;
+
+        .customer-item:hover {
             transform: translateY(-2px);
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        
-        .client-item.selected {
-            background-color: #fff3cd;
-            border-color: #ffeaa7;
-            font-weight: bold;
-        }
-        
-        .client-name {
-            font-size: 16px;
-        }
-        
-        .client-code {
-            background-color: #e9ecef;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 14px;
-            font-family: monospace;
-        }
-        
-        .client-item.selected .client-code {
-            background-color: #ffd54f;
-        }
-        
-        .controls {
-            padding: 20px 30px;
-            background-color: #f9f9f9;
-            border-top: 1px solid #eee;
+
+        /* 客戶被選中後的樣式 */
+        .customer-item.assigned-02 { background-color: #FFD700; color: black; border-color: #e6c200; font-weight: bold; }
+        .customer-item.assigned-08 { background-color: #FF4D4D; color: white; border-color: #cc0000; font-weight: bold; }
+        .customer-item.assigned-05 { background-color: #2ECC71; color: white; border-color: #27ae60; font-weight: bold; }
+
+        /* 底部複製區域 */
+        .action-area {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            justify-content: center;
+            gap: 15px;
         }
-        
-        .btn {
-            padding: 10px 20px;
+
+        .copy-btn {
+            padding: 12px 20px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: all 0.2s ease;
-            margin-right: 10px;
-            margin-bottom: 5px;
-        }
-        
-        .btn:last-child {
-            margin-right: 0;
-        }
-        
-        .btn-primary {
-            background-color: #3498db;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background-color: #2980b9;
-        }
-        
-        .btn-secondary {
-            background-color: #95a5a6;
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background-color: #7f8c8d;
-        }
-        
-        .btn-success {
-            background-color: #27ae60;
-            color: white;
-        }
-        
-        .btn-success:hover {
-            background-color: #219653;
-        }
-        
-        .btn-warning {
-            background-color: #f39c12;
-            color: white;
-        }
-        
-        .btn-warning:hover {
-            background-color: #e67e22;
-        }
-        
-        .btn-container {
-            display: flex;
-            flex-wrap: wrap;
-        }
-        
-        footer {
-            text-align: center;
-            padding: 20px;
-            color: #7f8c8d;
             font-size: 14px;
-            border-top: 1px solid #eee;
-            margin-top: 20px;
-        }
-        
-        @media (max-width: 768px) {
-            .client-list {
-                grid-template-columns: 1fr;
-            }
-            
-            .stats, .controls {
-                flex-direction: column;
-                gap: 10px;
-                align-items: flex-start;
-            }
-            
-            .btn-container {
-                width: 100%;
-                justify-content: space-between;
-            }
-            
-            .btn {
-                margin-right: 5px;
-                margin-bottom: 5px;
-                flex-grow: 1;
-                text-align: center;
-            }
-        }
-        
-        .legend {
-            display: flex;
-            gap: 15px;
-            margin-top: 10px;
-        }
-        
-        .legend-item {
+            font-weight: bold;
             display: flex;
             align-items: center;
             gap: 5px;
-            font-size: 14px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-        
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
+
+        .copy-btn:active {
+            transform: translateY(2px);
         }
-        
-        .selected-color {
-            background-color: #fff3cd;
-        }
-        
-        .normal-color {
-            background-color: #f8f9fa;
-        }
-        
-        .copy-notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background-color: #27ae60;
-            color: white;
-            padding: 15px 25px;
-            border-radius: 5px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s;
-            display: flex;
-            align-items: center;
-        }
-        
-        .copy-notification.show {
-            opacity: 1;
-        }
-        
-        .copy-notification i {
-            margin-right: 10px;
-            font-size: 18px;
-        }
-        
-        .preview-box {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border: 1px dashed #ccc;
-            border-radius: 5px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        
-        .preview-title {
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #2c3e50;
-        }
+
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>客戶名單認領系統</h1>
-            <div class="subtitle">銷售團隊客戶分配工具</div>
-        </header>
-        
-        <div class="stats">
-            <div>總客戶數: <span id="total-count">38</span></div>
-            <div>已選客戶: <span id="selected-count">0</span></div>
+
+    <h2>客戶分配看板</h2>
+
+    <div class="control-panel">
+        <span class="step-label">步驟 1: 點擊你是哪位銷售？</span>
+        <div class="role-selector">
+            <button class="role-btn btn-02 active" onclick="setRole('02')">我是 02 (黃)</button>
+            <button class="role-btn btn-08" onclick="setRole('08')">我是 08 (紅)</button>
+            <button class="role-btn btn-05" onclick="setRole('05')">我是 05 (綠)</button>
         </div>
-        
-        <div class="instructions">
-            <p>請銷售同事從下方客戶列表中選擇您要負責的客戶：</p>
-            <ul>
-                <li>點擊客戶名稱即可選擇/取消選擇</li>
-                <li>已選擇的客戶會顯示為黃色背景</li>
-                <li>使用「複製選中客戶」按鈕一鍵複製客戶清單</li>
-                <li>選擇完畢後，點擊「確認選擇」按鈕完成認領</li>
-            </ul>
-            <div class="legend">
-                <div class="legend-item">
-                    <div class="legend-color normal-color"></div>
-                    <span>未選擇</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color selected-color"></div>
-                    <span>已選擇</span>
-                </div>
-            </div>
-            
-            <div id="preview-area" style="display: none;">
-                <div class="preview-title">待複製內容預覽：</div>
-                <div class="preview-box" id="preview-content"></div>
-            </div>
+        <div style="font-size: 0.9em; color: #666;">
+            當前模式：<span id="current-role-text" style="font-weight:bold; color:#b7950b;">02號銷售 (點擊下方客戶以認領)</span>
         </div>
-        
-        <div class="client-list" id="client-list">
-            <!-- 客戶列表將由JavaScript動態生成 -->
-        </div>
-        
-        <div class="controls">
-            <div class="btn-container">
-                <button class="btn btn-secondary" id="clear-all">
-                    <i class="fas fa-trash-alt"></i> 清除所有
-                </button>
-                <button class="btn btn-secondary" id="select-all">
-                    <i class="fas fa-check-double"></i> 選擇全部
-                </button>
-                <button class="btn btn-success" id="copy-selected">
-                    <i class="fas fa-copy"></i> 複製選中客戶
-                </button>
-            </div>
-            <button class="btn btn-primary" id="confirm-selection">
-                <i class="fas fa-check-circle"></i> 確認選擇 (0)
-            </button>
-        </div>
-        
-        <footer>
-            <p>© 2023 銷售部門 | 客戶管理系統 | 最後更新: 2023年11月</p>
-        </footer>
     </div>
-    
-    <!-- 複製成功通知 -->
-    <div class="copy-notification" id="copy-notification">
-        <i class="fas fa-check-circle"></i> 客戶清單已複製到剪貼簿！
+
+    <div class="grid-container" id="customerList">
+        </div>
+
+    <div style="height: 100px;"></div>
+
+    <div class="action-area">
+        <button class="copy-btn btn-02" onclick="copyList('02')">📋 複製 02號 清單</button>
+        <button class="copy-btn btn-08" onclick="copyList('08')">📋 複製 08號 清單</button>
+        <button class="copy-btn btn-05" onclick="copyList('05')">📋 複製 05號 清單</button>
     </div>
 
     <script>
-        // 客戶數據
-        const clients = [
-            { name: "中島(鰂康山)", code: "661" },
-            { name: "中島(黃埔)", code: "661AA" },
-            { name: "中島(MEGA BOX)", code: "661AD" },
-            { name: "中島(The One)", code: "661AE" },
-            { name: "中島(荔枝角)", code: "661AF" },
-            { name: "中島(屯門)", code: "661AG" },
-            { name: "中島(九龍城)", code: "661AH" },
-            { name: "中島(悅來坊)", code: "661AK" },
-            { name: "中島(家樂坊)", code: "661AL" },
-            { name: "中与志(圓方)", code: "661BA" },
-            { name: "中与志(朗豪坊)", code: "661BB" },
-            { name: "中与志(盈置)", code: "661BC" },
-            { name: "中与志(K11)", code: "661BE" },
-            { name: "中与志(愉景灣)", code: "661BF" },
-            { name: "中与志(國際)", code: "661BG" },
-            { name: "中与志(太子大廈)", code: "661BH" },
-            { name: "中与志(德福)", code: "661BJ" },
-            { name: "圓方熟食", code: "661BK" },
-            { name: "中与志(奧)", code: "661BL" },
-            { name: "中与志(大圍)", code: "661BM" },
-            { name: "魚兵衛(沙田)", code: "661CA" },
-            { name: "魚兵衛(大埔)", code: "661CB" },
-            { name: "魚兵衛(新蒲崗)", code: "661CC" },
-            { name: "魚兵衛(荃灣)", code: "661CD" },
-            { name: "魚屋(荃)", code: "661CE" },
-            { name: "魚兵(V CITY)", code: "661CF" },
-            { name: "魚兵(新世紀)", code: "661CG" },
-            { name: "魚兵(官)", code: "661CH" },
-            { name: "勝手丼西環", code: "661CJ" },
-            { name: "魚兵衛(將)", code: "661CK" },
-            { name: "魚屋(坑口)", code: "661CL" },
-            { name: "魚兵元朗", code: "661CM" },
-            { name: "魚兵葵芳", code: "661CN" },
-            { name: "魚兵(北角)", code: "661CP" },
-            { name: "魚屋(元朗)", code: "661CQ" },
-            { name: "康山熟食", code: "661D" },
-            { name: "黃埔熟食", code: "661DA" },
-            { name: "屯門熟食", code: "661DB" }
+        // 1. 客戶數據
+        const customers = [
+            "禮佳(東涌) 645AA",
+            "禮佳(愉景灣) 645AB",
+            "禮佳(香港仔) 645B",
+            "禮佳(赤柱) 645E",
+            "禮佳(數) 645I",
+            "禮佳(又) 645L",
+            "禮佳(馬鞍山) 645T",
+            "禮佳(馬新港城) 645TA",
+            "禮佳(元朗) 645ZM",
+            "禮佳(鰂) 645ZN",
+            "禮佳(金鐘) 645ZQ"
         ];
 
-        // 選中的客戶索引
-        let selectedClients = [];
+        // 2. 當前選中的銷售角色 (默認 02)
+        let currentRole = '02';
+
+        // 3. 初始化頁面
+        const listContainer = document.getElementById('customerList');
         
-        // 初始化頁面
-        document.addEventListener('DOMContentLoaded', function() {
-            renderClientList();
-            updateStats();
-            
-            // 清除所有選擇按鈕
-            document.getElementById('clear-all').addEventListener('click', function() {
-                selectedClients = [];
-                renderClientList();
-                updateStats();
-                hidePreview();
-            });
-            
-            // 選擇全部客戶按鈕
-            document.getElementById('select-all').addEventListener('click', function() {
-                selectedClients = clients.map((_, index) => index);
-                renderClientList();
-                updateStats();
-                updatePreview();
-            });
-            
-            // 複製選中客戶按鈕
-            document.getElementById('copy-selected').addEventListener('click', function() {
-                copySelectedClients();
-            });
-            
-            // 確認選擇按鈕
-            document.getElementById('confirm-selection').addEventListener('click', function() {
-                if (selectedClients.length === 0) {
-                    alert('請先選擇至少一個客戶！');
-                    return;
-                }
-                
-                const selectedNames = selectedClients.map(index => clients[index].name).join(', ');
-                alert(`您已成功認領以下客戶：\n\n${selectedNames}\n\n共 ${selectedClients.length} 個客戶。`);
-                
-                // 這裡可以添加實際的提交邏輯，如發送到伺服器
-                console.log("選中的客戶索引:", selectedClients);
-                console.log("選中的客戶:", selectedClients.map(index => clients[index]));
-            });
+        customers.forEach((name, index) => {
+            const div = document.createElement('div');
+            div.className = 'customer-item';
+            div.innerText = name;
+            div.id = 'cust-' + index;
+            // 綁定點擊事件
+            div.onclick = function() { toggleAssignment(this); };
+            listContainer.appendChild(div);
         });
-        
-        // 渲染客戶列表
-        function renderClientList() {
-            const clientListElement = document.getElementById('client-list');
-            clientListElement.innerHTML = '';
+
+        // 4. 切換銷售角色函數
+        function setRole(role) {
+            currentRole = role;
             
-            clients.forEach((client, index) => {
-                const isSelected = selectedClients.includes(index);
-                
-                const clientElement = document.createElement('div');
-                clientElement.className = `client-item ${isSelected ? 'selected' : ''}`;
-                clientElement.dataset.index = index;
-                
-                clientElement.innerHTML = `
-                    <div class="client-name">${client.name}</div>
-                    <div class="client-code">${client.code}</div>
-                `;
-                
-                clientElement.addEventListener('click', function() {
-                    toggleClientSelection(index);
-                });
-                
-                clientListElement.appendChild(clientElement);
-            });
+            // 更新按鈕樣式
+            document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.btn-${role}`).classList.add('active');
+
+            // 更新文字提示
+            const textSpan = document.getElementById('current-role-text');
+            let colorCode = role === '02' ? '#b7950b' : (role === '08' ? '#c0392b' : '#27ae60');
+            textSpan.style.color = colorCode;
+            textSpan.innerText = `${role}號銷售 (點擊下方客戶以認領)`;
         }
-        
-        // 切換客戶選擇狀態
-        function toggleClientSelection(index) {
-            const clientIndex = selectedClients.indexOf(index);
-            
-            if (clientIndex === -1) {
-                // 如果不在選中列表中，則添加
-                selectedClients.push(index);
+
+        // 5. 點擊客戶分配邏輯
+        function toggleAssignment(element) {
+            const targetClass = `assigned-${currentRole}`;
+
+            // 如果已經是當前銷售的，則取消選中 (變回白色)
+            if (element.classList.contains(targetClass)) {
+                element.classList.remove(targetClass);
             } else {
-                // 如果在選中列表中，則移除
-                selectedClients.splice(clientIndex, 1);
+                // 先移除所有其他銷售的顏色 (允許搶單)
+                element.classList.remove('assigned-02', 'assigned-08', 'assigned-05');
+                // 加上當前銷售的顏色
+                element.classList.add(targetClass);
             }
-            
-            renderClientList();
-            updateStats();
-            updatePreview();
         }
-        
-        // 更新統計信息
-        function updateStats() {
-            document.getElementById('selected-count').textContent = selectedClients.length;
-            document.getElementById('confirm-selection').innerHTML = `<i class="fas fa-check-circle"></i> 確認選擇 (${selectedClients.length})`;
+
+        // 6. 複製清單邏輯
+        function copyList(role) {
+            // 找到所有屬於該角色的元素
+            const assignedItems = document.querySelectorAll(`.customer-item.assigned-${role}`);
             
-            // 更新複製按鈕文字
-            const copyBtn = document.getElementById('copy-selected');
-            copyBtn.innerHTML = `<i class="fas fa-copy"></i> 複製選中客戶 (${selectedClients.length})`;
-        }
-        
-        // 複製選中的客戶到剪貼簿
-        function copySelectedClients() {
-            if (selectedClients.length === 0) {
-                alert('請先選擇至少一個客戶！');
+            if (assignedItems.length === 0) {
+                alert(`${role}號銷售 暫未選擇任何客戶！`);
                 return;
             }
-            
-            // 生成要複製的文本
-            let copyText = `已選擇的客戶清單 (共${selectedClients.length}個)：\n\n`;
-            
-            selectedClients.forEach((index, i) => {
-                const client = clients[index];
-                copyText += `${i+1}. ${client.name} (${client.code})\n`;
+
+            // 提取文字並組合成清單
+            let textToCopy = Array.from(assignedItems).map(item => item.innerText).join('\n');
+
+            // 執行複製
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert(`${role}號銷售的清單已複製！\n共 ${assignedItems.length} 個客戶。`);
+            }).catch(err => {
+                console.error('複製失敗:', err);
+                alert('複製失敗，請手動複製。');
             });
-            
-            copyText += `\n複製時間: ${new Date().toLocaleString('zh-TW')}`;
-            
-            // 使用 Clipboard API 複製文本
-            navigator.clipboard.writeText(copyText).then(function() {
-                // 顯示複製成功通知
-                showCopyNotification();
-                
-                // 也可以同時在控制台輸出
-                console.log("已複製到剪貼簿:\n" + copyText);
-            }).catch(function(err) {
-                // 如果 Clipboard API 失敗，使用傳統方法
-                console.error('Clipboard API 失敗: ', err);
-                fallbackCopyText(copyText);
-            });
-        }
-        
-        // 傳統的複製方法（兼容性備用）
-        function fallbackCopyText(text) {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            textArea.style.position = "fixed";
-            textArea.style.opacity = "0";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            
-            try {
-                const successful = document.execCommand('copy');
-                if (successful) {
-                    showCopyNotification();
-                    console.log("已使用傳統方法複製到剪貼簿");
-                } else {
-                    alert('複製失敗，請手動選取並複製以下文本：\n\n' + text);
-                }
-            } catch (err) {
-                alert('複製失敗，請手動選取並複製以下文本：\n\n' + text);
-            }
-            
-            document.body.removeChild(textArea);
-        }
-        
-        // 顯示複製成功通知
-        function showCopyNotification() {
-            const notification = document.getElementById('copy-notification');
-            notification.classList.add('show');
-            
-            // 3秒後自動隱藏
-            setTimeout(function() {
-                notification.classList.remove('show');
-            }, 3000);
-        }
-        
-        // 更新預覽區域
-        function updatePreview() {
-            const previewArea = document.getElementById('preview-area');
-            const previewContent = document.getElementById('preview-content');
-            
-            if (selectedClients.length === 0) {
-                previewArea.style.display = 'none';
-                return;
-            }
-            
-            previewArea.style.display = 'block';
-            
-            let previewHTML = '';
-            selectedClients.forEach((index, i) => {
-                const client = clients[index];
-                previewHTML += `<div><strong>${i+1}.</strong> ${client.name} <span style="color:#666;">(${client.code})</span></div>`;
-            });
-            
-            previewContent.innerHTML = previewHTML;
-        }
-        
-        // 隱藏預覽區域
-        function hidePreview() {
-            document.getElementById('preview-area').style.display = 'none';
         }
     </script>
 </body>
