@@ -137,6 +137,12 @@
             font-size: 16px;
             font-weight: bold;
             transition: all 0.2s ease;
+            margin-right: 10px;
+            margin-bottom: 5px;
+        }
+        
+        .btn:last-child {
+            margin-right: 0;
         }
         
         .btn-primary {
@@ -157,6 +163,29 @@
             background-color: #7f8c8d;
         }
         
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
+        }
+        
+        .btn-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+        
+        .btn-container {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        
         footer {
             text-align: center;
             padding: 20px;
@@ -175,6 +204,18 @@
                 flex-direction: column;
                 gap: 10px;
                 align-items: flex-start;
+            }
+            
+            .btn-container {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .btn {
+                margin-right: 5px;
+                margin-bottom: 5px;
+                flex-grow: 1;
+                text-align: center;
             }
         }
         
@@ -204,7 +245,51 @@
         .normal-color {
             background-color: #f8f9fa;
         }
+        
+        .copy-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #27ae60;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 5px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            display: flex;
+            align-items: center;
+        }
+        
+        .copy-notification.show {
+            opacity: 1;
+        }
+        
+        .copy-notification i {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+        
+        .preview-box {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px dashed #ccc;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .preview-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <div class="container">
@@ -223,6 +308,7 @@
             <ul>
                 <li>點擊客戶名稱即可選擇/取消選擇</li>
                 <li>已選擇的客戶會顯示為黃色背景</li>
+                <li>使用「複製選中客戶」按鈕一鍵複製客戶清單</li>
                 <li>選擇完畢後，點擊「確認選擇」按鈕完成認領</li>
             </ul>
             <div class="legend">
@@ -235,6 +321,11 @@
                     <span>已選擇</span>
                 </div>
             </div>
+            
+            <div id="preview-area" style="display: none;">
+                <div class="preview-title">待複製內容預覽：</div>
+                <div class="preview-box" id="preview-content"></div>
+            </div>
         </div>
         
         <div class="client-list" id="client-list">
@@ -242,16 +333,30 @@
         </div>
         
         <div class="controls">
-            <div>
-                <button class="btn btn-secondary" id="clear-all">清除所有選擇</button>
-                <button class="btn btn-secondary" id="select-all">選擇全部客戶</button>
+            <div class="btn-container">
+                <button class="btn btn-secondary" id="clear-all">
+                    <i class="fas fa-trash-alt"></i> 清除所有
+                </button>
+                <button class="btn btn-secondary" id="select-all">
+                    <i class="fas fa-check-double"></i> 選擇全部
+                </button>
+                <button class="btn btn-success" id="copy-selected">
+                    <i class="fas fa-copy"></i> 複製選中客戶
+                </button>
             </div>
-            <button class="btn btn-primary" id="confirm-selection">確認選擇 (0 個客戶)</button>
+            <button class="btn btn-primary" id="confirm-selection">
+                <i class="fas fa-check-circle"></i> 確認選擇 (0)
+            </button>
         </div>
         
         <footer>
             <p>© 2023 銷售部門 | 客戶管理系統 | 最後更新: 2023年11月</p>
         </footer>
+    </div>
+    
+    <!-- 複製成功通知 -->
+    <div class="copy-notification" id="copy-notification">
+        <i class="fas fa-check-circle"></i> 客戶清單已複製到剪貼簿！
     </div>
 
     <script>
@@ -310,6 +415,7 @@
                 selectedClients = [];
                 renderClientList();
                 updateStats();
+                hidePreview();
             });
             
             // 選擇全部客戶按鈕
@@ -317,6 +423,12 @@
                 selectedClients = clients.map((_, index) => index);
                 renderClientList();
                 updateStats();
+                updatePreview();
+            });
+            
+            // 複製選中客戶按鈕
+            document.getElementById('copy-selected').addEventListener('click', function() {
+                copySelectedClients();
             });
             
             // 確認選擇按鈕
@@ -374,12 +486,110 @@
             
             renderClientList();
             updateStats();
+            updatePreview();
         }
         
         // 更新統計信息
         function updateStats() {
             document.getElementById('selected-count').textContent = selectedClients.length;
-            document.getElementById('confirm-selection').textContent = `確認選擇 (${selectedClients.length} 個客戶)`;
+            document.getElementById('confirm-selection').innerHTML = `<i class="fas fa-check-circle"></i> 確認選擇 (${selectedClients.length})`;
+            
+            // 更新複製按鈕文字
+            const copyBtn = document.getElementById('copy-selected');
+            copyBtn.innerHTML = `<i class="fas fa-copy"></i> 複製選中客戶 (${selectedClients.length})`;
+        }
+        
+        // 複製選中的客戶到剪貼簿
+        function copySelectedClients() {
+            if (selectedClients.length === 0) {
+                alert('請先選擇至少一個客戶！');
+                return;
+            }
+            
+            // 生成要複製的文本
+            let copyText = `已選擇的客戶清單 (共${selectedClients.length}個)：\n\n`;
+            
+            selectedClients.forEach((index, i) => {
+                const client = clients[index];
+                copyText += `${i+1}. ${client.name} (${client.code})\n`;
+            });
+            
+            copyText += `\n複製時間: ${new Date().toLocaleString('zh-TW')}`;
+            
+            // 使用 Clipboard API 複製文本
+            navigator.clipboard.writeText(copyText).then(function() {
+                // 顯示複製成功通知
+                showCopyNotification();
+                
+                // 也可以同時在控制台輸出
+                console.log("已複製到剪貼簿:\n" + copyText);
+            }).catch(function(err) {
+                // 如果 Clipboard API 失敗，使用傳統方法
+                console.error('Clipboard API 失敗: ', err);
+                fallbackCopyText(copyText);
+            });
+        }
+        
+        // 傳統的複製方法（兼容性備用）
+        function fallbackCopyText(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.opacity = "0";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopyNotification();
+                    console.log("已使用傳統方法複製到剪貼簿");
+                } else {
+                    alert('複製失敗，請手動選取並複製以下文本：\n\n' + text);
+                }
+            } catch (err) {
+                alert('複製失敗，請手動選取並複製以下文本：\n\n' + text);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        // 顯示複製成功通知
+        function showCopyNotification() {
+            const notification = document.getElementById('copy-notification');
+            notification.classList.add('show');
+            
+            // 3秒後自動隱藏
+            setTimeout(function() {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // 更新預覽區域
+        function updatePreview() {
+            const previewArea = document.getElementById('preview-area');
+            const previewContent = document.getElementById('preview-content');
+            
+            if (selectedClients.length === 0) {
+                previewArea.style.display = 'none';
+                return;
+            }
+            
+            previewArea.style.display = 'block';
+            
+            let previewHTML = '';
+            selectedClients.forEach((index, i) => {
+                const client = clients[index];
+                previewHTML += `<div><strong>${i+1}.</strong> ${client.name} <span style="color:#666;">(${client.code})</span></div>`;
+            });
+            
+            previewContent.innerHTML = previewHTML;
+        }
+        
+        // 隱藏預覽區域
+        function hidePreview() {
+            document.getElementById('preview-area').style.display = 'none';
         }
     </script>
 </body>
